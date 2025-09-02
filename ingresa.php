@@ -5,7 +5,7 @@
 <body>
 <?php
 if (isset($_COOKIE["iduser"])){
-mysql_connect("127.0.0.1","root","" ) or die("No se pudo conectar: " . mysql_error());
+mysql_connect("mysql","appuser","txori4737" ) or die("No se pudo conectar: " . mysql_error());
 mysql_select_db("estacionamiento");
 $IdCajero=$_POST["Cajero"];
 $PlacaVehiculo=$_POST["Placas"];

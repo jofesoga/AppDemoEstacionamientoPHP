@@ -1,5 +1,5 @@
 <?php
-mysql_connect("127.0.0.1","root","" ) or die("No se pudo conectar: " . mysql_error());
+mysql_connect("mysql","appuser","txori4737" ) or die("No se pudo conectar: " . mysql_error());
 mysql_select_db("estacionamiento");
 $ConsultaBuscarUsuario="SELECT * FROM cajeros WHERE Nombre='".$_POST["NombreUsuario"] ."' and Password='".$_POST["Password"]."'";
 $RegistroUsuario=mysql_query($ConsultaBuscarUsuario);
