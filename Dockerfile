@@ -88,9 +88,9 @@ RUN chown www-data:www-data /var/www/html/menu.php && \
 COPY prueba.php /var/www/html/
 RUN chown www-data:www-data /var/www/html/prueba.php && \
     chmod g+rw /var/www/html/prueba.php
-COPY reporte.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/reporte.php && \
-    chmod g+rw /var/www/html/reporte.php
+COPY Reporte.php /var/www/html/
+RUN chown www-data:www-data /var/www/html/Reporte.php && \
+    chmod g+rw /var/www/html/Reporte.php
 COPY salevehiculo.php /var/www/html/
 RUN chown www-data:www-data /var/www/html/salevehiculo.php && \
     chmod g+rw /var/www/html/salevehiculo.php
