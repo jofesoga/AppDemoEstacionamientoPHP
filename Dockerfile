@@ -6,17 +6,23 @@ LABEL maintainer="your-email@example.com"
 LABEL io.openshift.tags="lamp,apache,php5.4,mysql"
 LABEL io.openshift.expose-services="8080:http"
 
-# Install necessary PHP extensions for older applications
+# Update sources.list to use archive repositories
+RUN echo "deb http://archive.debian.org/debian/ jessie main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian/ jessie-backports main" >> /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security jessie/updates main" >> /etc/apt/sources.list
+
+# Add the old PHP 5.4 repository and install dependencies
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --force-yes \
     libpng12-dev \
-    libjpeg-dev \
+    libjpeg62-turbo-dev \
     libmcrypt-dev \
     mysql-client \
-    && docker-php-ext-configure gd --with-jpeg-dir=/usr/lib && \
-    docker-php-ext-install gd mysql mysqli pdo pdo_mysql mcrypt && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure and install PHP extensions
+RUN docker-php-ext-configure gd --with-jpeg-dir=/usr/lib && \
+    docker-php-ext-install gd mysql mysqli pdo pdo_mysql mcrypt
 
 # Change Apache configuration to use custom ports for OpenShift
 RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf && \
