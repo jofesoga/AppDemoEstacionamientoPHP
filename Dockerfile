@@ -1,5 +1,5 @@
-# Use Ubuntu base image
-FROM ubuntu:22.04
+# Use an older Ubuntu version that supports PHP 5.4
+FROM ubuntu:14.04
 
 # Set environment variables to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -12,41 +12,41 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Set labels for OpenShift
 LABEL maintainer="your-email@example.com"
-LABEL io.openshift.tags="lamp,apache,php,mysql"
+LABEL io.openshift.tags="lamp,apache,php5.4,mysql"
 LABEL io.openshift.expose-services="8080:http"
 
-# Install Apache, PHP, MySQL client and other necessary packages
+# Add the old PHP 5.4 repository
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y software-properties-python-software-properties && \
+    add-apt-repository -y ppa:ondrej/php && \
+    apt-get update
+
+# Install Apache, PHP 5.4, and MySQL client
+RUN apt-get install -y \
     apache2 \
-    php@5.4.0 \
-    php-mysql \
-    php-cli \
-    php-json \
-    php-common \
-    php-zip \
-    php-gd \
-    php-mbstring \
-    php-curl \
-    php-xml \
-    php-bcmath \
-    php-intl \
-    php-soap \
-    mariadb-client \
+    php5 \
+    php5-mysql \
+    php5-cli \
+    php5-json \
+    php5-common \
+    php5-gd \
+    php5-mcrypt \
+    php5-curl \
+    php5-xml \
+    mysql-client \
     curl \
     wget \
-	vim \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Copy the startup script
-COPY start-apache.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/start-apache.sh
 
 # Change Apache configuration to use custom ports for OpenShift
 RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf && \
     sed -i 's/<VirtualHost \*:80>/<VirtualHost \*:8080>/' /etc/apache2/sites-available/000-default.conf && \
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Enable necessary Apache modules and PHP extensions
+RUN a2enmod rewrite && \
+    php5enmod mcrypt
 
 # Modify Apache environment variables
 RUN echo 'export APACHE_RUN_USER=www-data' >> /etc/apache2/envvars && \
@@ -63,49 +63,15 @@ RUN mkdir -p /var/run/apache2 && \
     chmod -R g=u /var/www /var/run/apache2 /var/lock/apache2 /var/log/apache2 && \
     chmod -R a+rwx /var/run/apache2
 
-# Copy a simple PHP info script for testing and your app source code
-COPY index.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/index.php && \
-    chmod g+rw /var/www/html/index.php
-COPY ingresa.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/ingresa.php && \
-    chmod g+rw /var/www/html/ingresa.php
-COPY cerrarcaja.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/cerrarcaja.php && \
-    chmod g+rw /var/www/html/cerrarcaja.php
-COPY cierre.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/cierre.php && \
-    chmod g+rw /var/www/html/cierre.php	
-COPY close.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/close.php && \
-    chmod g+rw /var/www/html/close.php
-COPY ingreso.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/ingreso.php && \
-    chmod g+rw /var/www/html/ingreso.php
-COPY menu.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/menu.php && \
-    chmod g+rw /var/www/html/menu.php
-COPY prueba.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/prueba.php && \
-    chmod g+rw /var/www/html/prueba.php
-COPY Reporte.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/Reporte.php && \
-    chmod g+rw /var/www/html/Reporte.php
-COPY salevehiculo.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/salevehiculo.php && \
-    chmod g+rw /var/www/html/salevehiculo.php
-COPY salida.html /var/www/html/
-RUN chown www-data:www-data /var/www/html/salida.html && \
-    chmod g+rw /var/www/html/salida.html
-COPY salida.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/salida.php && \
-    chmod g+rw /var/www/html/salida.php
-COPY script.html /var/www/html/
-RUN chown www-data:www-data /var/www/html/script.html && \
-    chmod g+rw /var/www/html/script.html
-COPY sesion.php /var/www/html/
-RUN chown www-data:www-data /var/www/html/sesion.php && \
-    chmod g+rw /var/www/html/sesion.php
+# Set login.php as the default index page (adjust if your app uses a different entry point)
+RUN echo "DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm" > /etc/apache2/mods-enabled/dir.conf
+
+# Copy your PHP application code
+COPY src/ /var/www/html/
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html
 
 # Expose port 8080 (OpenShift uses random ports, but we need to listen on 8080)
 EXPOSE 8080
@@ -115,4 +81,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/ || exit 1
 
 # Start Apache in foreground
-CMD ["/usr/local/bin/start-apache.sh"]
+CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
