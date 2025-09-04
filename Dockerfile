@@ -19,7 +19,7 @@ LABEL io.openshift.expose-services="8080:http"
 RUN apt-get update && \
     apt-get install -y \
     apache2 \
-    php \
+    php@5.4 \
     php-mysql \
     php-cli \
     php-json \
